@@ -1,8 +1,10 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:farmer/farmerpart/bottomnavbar/abccentmember/abcmhome.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 
 class FVProfile extends StatefulWidget {
@@ -25,14 +27,63 @@ class MapScreenState extends State<FVProfile>
   TextEditingController fvisit = TextEditingController();
   TextEditingController since = TextEditingController();
 
+  final _auth = FirebaseAuth.instance;
+  final firebaseInstance = FirebaseFirestore.instance;
+  User user = FirebaseAuth.instance.currentUser;
+  final uuid = FirebaseAuth.instance.currentUser.uid;
+
   bool _status = true;
   final FocusNode myFocusNode = FocusNode();
 
-  // @override
-  // void initState() {
-  //   // TODO: implement initState
-  //   super.initState();
-  // }
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async{
+    var document = await firebaseInstance.collection('farmers').doc(uuid).get().then((value){
+      print(value.data());
+      setState(() {
+        name = value.data()["name"];
+        email = value.data()["email"];
+        fvisit = value.data()["availabilityForVisit"];
+        address = value.data()["address"];
+        // growing crops
+        income = value.data()["income"];
+        land = value.data()["landArea"];
+        mobile = value.data()["mobile"];
+        since = value.data()["growingSince"];
+        // photo Url
+        // centerCode
+        pincode = value.data()["pincode"];
+        state = value.data()["state"];
+        workers = value.data()["workers"];
+      });
+    });
+  }
+
+  Future<void> _save() async{
+    bool farmVisit = ('$fvisit' == 'true')?true : false;
+    firebaseInstance.collection("users").doc(uuid).update({
+      "address" : '$address',
+      'availabilityForVisit' : farmVisit,
+      'email' : '$email',
+      'growingSince' : '$since',
+      'income' : '$income',
+      'landArea' : '$land',
+      'mobile' : '$mobile',
+      'name' : '$name',
+      'pincode' : '$pincode',
+      'state' : '$state',
+      'workers' : int.parse(workers.text)
+    }).then((value){
+      print("success!");
+    }).catchError((){
+      print("error");
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -530,7 +581,9 @@ class MapScreenState extends State<FVProfile>
                 //   });
                 //   print(name.value.text);
                 // },
-                onPressed: () {},
+                onPressed: () {
+                  _save();
+                },
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20.0)),
               )),
